@@ -16,6 +16,12 @@ object CaseClassReadersSpec {
   case class WithDefault(string: String = "bar")
   case class Foo(bool: Boolean, intOpt: Option[Int], withNestedCaseClass: WithNestedCaseClass,
                  withNestedValueClass: WithNestedValueClass)
+
+  object EnumExample extends Enumeration {
+    type Enum = Value
+    val A, B, C = Value
+  }
+  case class EnumCaseClass(enum: EnumExample.Enum)
 }
 
 class CaseClassReadersSpec extends Spec { def is = s2"""
@@ -29,6 +35,7 @@ class CaseClassReadersSpec extends Spec { def is = s2"""
     read a nested value class $nestedValueClass
     fall back to a default value $fallbackToDefault
     do a combination of these things $combination
+    hydrate a case cass with enums $hydrateEnumCaseClass
   """
 
   import CaseClassReadersSpec._
@@ -120,4 +127,16 @@ class CaseClassReadersSpec extends Spec { def is = s2"""
     )
   }
 
+  def hydrateEnumCaseClass = {
+    val cfg = ConfigFactory.parseString(
+      s"""
+         |foo {
+         |  EnumExample = {
+         |    enum = "A"
+         |  }
+         |}
+       """.stripMargin)
+    cfg.as[EnumCaseClass]("foo") must_== EnumCaseClass(enum = EnumExample.withName("A"))
+    true should_==(true)
+  }
 }
